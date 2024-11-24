@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from mtcnn import MTCNN
 from PIL import Image
-from db_helper import initialize_database, insert_or_update_student
+from src.modules.db_helper import initialize_database, insert_or_update_student
 
 # Load the pre-trained FaceNet model
 FACENET_MODEL_PATH = "D:\PBL_Project_2024\Attendance_system\model\facenet_keras.h5"
