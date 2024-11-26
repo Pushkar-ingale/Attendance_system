@@ -1,0 +1,8 @@
+flask
+torch
+keras
+mtcnn
+pillow
+numpy
+
+
