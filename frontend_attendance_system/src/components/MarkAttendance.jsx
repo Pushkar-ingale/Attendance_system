@@ -20,7 +20,8 @@ const MarkAttendance = () => {
     image: null,
   });
 
-  const [alert, setAlert] = useState(null); // State for displaying alerts
+  const [alert, setAlert] = useState(null);
+  const [downloadLink, setDownloadLink] = useState(null); // State for download link
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,26 +40,32 @@ const MarkAttendance = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const data = new FormData();
     data.append("subject", formData.subject);
     data.append("class_no", formData.classNo);
     data.append("department", formData.department);
     data.append("year", formData.year);
     data.append("image", formData.image);
-
+  
     try {
       const response = await fetch("http://127.0.0.1:5000/upload", {
         method: "POST",
         body: data,
       });
-
+  
+      const result = await response.json();
+  
       if (response.ok) {
         setAlert({
           type: "success",
           title: "Success",
           message: "Upload successful!",
         });
+  
+        // Update download link with the filename
+        setDownloadLink(`http://127.0.0.1:5000/download_csv?filename=${result.csv_filename}`);
+  
         setFormData({
           subject: "",
           classNo: "",
@@ -70,7 +77,7 @@ const MarkAttendance = () => {
         setAlert({
           type: "error",
           title: "Error",
-          message: "Failed to upload. Please try again.",
+          message: result.error || "Failed to upload. Please try again.",
         });
       }
     } catch (error) {
@@ -82,6 +89,7 @@ const MarkAttendance = () => {
       });
     }
   };
+  
 
   return (
     <Box
@@ -174,6 +182,20 @@ const MarkAttendance = () => {
               Upload
             </Button>
           </form>
+
+          {downloadLink && (
+  <a href={downloadLink} download>
+    <Button
+      variant="contained"
+      color="secondary"
+      fullWidth
+      sx={{ mt: 2 }}
+    >
+      Download Attendance CSV
+    </Button>
+  </a>
+)}
+
         </CardContent>
       </Card>
     </Box>

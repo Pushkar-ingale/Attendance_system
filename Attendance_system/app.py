@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 from flask_cors import CORS  # Import CORS
 from src.modules.db_helper import initialize_database
@@ -103,36 +103,49 @@ def upload_file():
         logging.error(f"Error in /upload: {traceback.format_exc()}")
         return jsonify({"error": "An error occurred while processing your request."}), 500
 
-@app.route('/process_attendance')
+@app.route('/process_attendance', methods=['GET'])
 def process_attendance():
-    """Process uploaded file and mark attendance."""
     try:
-        # Retrieve query parameters
+        # Extract parameters from the request
         filepath = request.args.get('filepath')
         subject = request.args.get('subject')
         class_no = request.args.get('class_no')
         department = request.args.get('department')
         year = request.args.get('year')
 
-        # Validate file path
-        if not filepath or not os.path.exists(filepath):
-            return jsonify({"error": "File does not exist"}), 400
+        # Check if any of the required parameters are missing
+        if not filepath or not subject or not class_no or not department or not year:
+            raise ValueError("Missing required parameter(s).")
 
-        # Validate form data
-        if not subject or not class_no or not department or not year:
-            cleanup_file(filepath)
-            return jsonify({"error": "Missing form data"}), 400
-
-        # Call attendance marking function
-        mark_attendance(filepath, subject, class_no, department, year)
-
-        # Cleanup the uploaded file
+        # Call the mark_attendance function and get the filename
+        csv_filename = mark_attendance(filepath, subject, class_no, department, year)
         cleanup_file(filepath)
 
-        return jsonify({"message": "Attendance marked successfully!"}), 200
+        return jsonify({
+            "message": "Attendance marked successfully!",
+            "csv_filename": csv_filename  # This will be used to download the file
+        }), 200
     except Exception as e:
         logging.error(f"Error in /process_attendance: {traceback.format_exc()}")
         return jsonify({"error": "An error occurred while processing attendance."}), 500
+
+csv_dir = "attendance_records"  # Directory where CSVs are stored
+@app.route('/download_csv', methods=['GET'])
+def download_csv():
+    filename = request.args.get('filename')
+    print(filename)
+    # Check if filename is provided and valid
+    if not filename or filename == 'null':
+        return jsonify({"error": "Invalid filename"}), 400
+
+    # Construct the full path
+    filepath = os.path.join(csv_dir, filename)
+    print(filepath)
+    # Check if the file exists
+    if not os.path.isfile(filepath):
+        return jsonify({"error": "File not found"}), 404
+
+    return send_file(filepath, as_attachment=True, download_name=filename)
 
 # Main function
 if __name__ == '__main__':
